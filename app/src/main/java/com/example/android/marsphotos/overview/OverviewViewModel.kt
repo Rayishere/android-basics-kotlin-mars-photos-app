@@ -21,9 +21,17 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.android.marsphotos.network.MarsApi
+import com.example.android.marsphotos.network.MarsApiService
 import com.example.android.marsphotos.network.MarsPhoto
 import kotlinx.coroutines.launch
 import java.lang.Exception
+
+/**
+ * The [enum] is short for enumeration
+ * Meaning: ordered list of all the items in a collection
+ * Each [enum] constant is an object of the enum class
+ */
+enum class MarsApiStatus {Loading, ERROR, DONE}
 
 /**
  * The [ViewModel] that is attached to the [OverviewFragment].
@@ -31,14 +39,14 @@ import java.lang.Exception
 class OverviewViewModel : ViewModel() {
 
     // The internal MutableLiveData that stores the status of the most recent request
-    private val _status = MutableLiveData<String>()
+    private val _status = MutableLiveData<MarsApiStatus>()
 
     // A mutable property _photos to store a single MarsPhoto object
-    private val _photos = MutableLiveData<MarsPhoto>()
-    val photos: LiveData<MarsPhoto> = _photos
+    private val _photos = MutableLiveData<List<MarsPhoto>>()
+    val photos: LiveData<List<MarsPhoto>> = _photos
 
     // The external immutable LiveData for the request status
-    val status: LiveData<String> = _status
+    val status: LiveData<MarsApiStatus> = _status
     /**
      * Call getMarsPhotos() on init so we can display status immediately.
      */
@@ -53,16 +61,22 @@ class OverviewViewModel : ViewModel() {
     private fun getMarsPhotos() {
         //_status.value = "Set the Mars API status response here!"
         viewModelScope.launch {
+            // waiting for the data
+            _status.value = MarsApiStatus.Loading
+
             try {
                 // Assign the first Mars photo retrieved to the new variable _photo
-                _photos.value = MarsApi.retrofitService.getPhotos()[0]
-                _status.value = "  First Mars image URL : ${_photos.value!!.imgSrcUrl}"
+                _photos.value = MarsApi.retrofitService.getPhotos()
+                //_status.value = "Success: Mars properties retrieved"
+                _status.value = MarsApiStatus.DONE
 
                 //val listResult = MarsApi.retrofitService.getPhotos()
                 //_status.value = "Success: ${listResult.size} Mars photos retrieved."
             } catch (e: Exception) {
-                _status.value = "Failure: ${e.message}"
-
+                //_status.value = "Failure: ${e.message}"
+                _status.value = MarsApiStatus.ERROR
+                // clears the Recycler view
+                _photos.value = listOf()
             }
         }
     }
